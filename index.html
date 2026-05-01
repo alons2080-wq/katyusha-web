@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Katyusha Project</title>
+  <link rel="icon" type="image/png" href="assets/icon.png" />
+  <!-- Tab icon shown via favicon above; emoji fallback removed -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ───────────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f14;
+      --bg2:       #13161e;
+      --bg3:       #1a1e2a;
+      --surface:   rgba(255,255,255,0.04);
+      --border:    rgba(255,255,255,0.08);
+      --red:       #e63946;
+      --red-dim:   rgba(230,57,70,0.15);
+      --red-glow:  rgba(230,57,70,0.35);
+      --text:      #e8eaf0;
+      --muted:     #7a7f96;
+      --accent:    #c9d1e8;
+      --radius:    14px;
+      --radius-lg: 22px;
+      color-scheme: dark;
+    }
+    [data-theme="light"] {
+      --bg:        #f0f2f8;
+      --bg2:       #e4e7f2;
+      --bg3:       #d8dcea;
+      --surface:   rgba(0,0,0,0.04);
+      --border:    rgba(0,0,0,0.10);
+      --text:      #111320;
+      --muted:     #5a607a;
+      --accent:    #1a1e2a;
+      color-scheme: light;
+    }
+
+    /* ── RESET ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.4s, color 0.4s;
+    }
+    a { color: inherit; text-decoration: none; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── NOISE OVERLAY ────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── NAVBAR ───────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      background: rgba(13,15,20,0.7);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.4s;
+    }
+    [data-theme="light"] nav { background: rgba(240,242,248,0.75); }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em;
+    }
+    .nav-logo .star { color: var(--red); font-size: 1.3rem; }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a {
+      font-size: 0.88rem; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.04em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--red); }
+
+    .theme-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 50%; width: 36px; height: 36px;
+      cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .theme-btn:hover { background: var(--red-dim); transform: rotate(20deg); }
+
+    /* ── SECTIONS ─────────────────────────────────────────── */
+    section { display: none; }
+    section.active { display: block; }
+    .page-wrap { padding-top: 80px; min-height: 100vh; }
+
+    /* ── HERO ─────────────────────────────────────────────── */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: 7rem 2.5rem 5rem;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 100%);
+    }
+    .hero-orb {
+      position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+      width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle, var(--red-glow) 0%, transparent 70%);
+      pointer-events: none;
+      animation: pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+      50%       { transform: translateX(-50%) scale(1.08); opacity: 1; }
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.35rem 0.9rem;
+      background: var(--red-dim); border: 1px solid var(--red);
+      border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-weight: 800; letter-spacing: -0.04em; line-height: 1;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero h1 span { color: var(--red); }
+    .hero-sub {
+      max-width: 540px; margin: 1.5rem auto 0;
+      font-size: 1.05rem; color: var(--muted); line-height: 1.7;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .hero-actions {
+      display: flex; gap: 1rem; margin-top: 2.5rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .btn-primary {
+      padding: 0.75rem 1.8rem;
+      background: var(--red); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; transition: box-shadow 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 24px var(--red-glow);
+      transform: translateY(-2px);
+    }
+    .btn-ghost {
+      padding: 0.75rem 1.8rem;
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s, transform 0.15s;
+    }
+    .btn-ghost:hover { background: var(--bg3); transform: translateY(-2px); }
+
+    /* ── CODE BLOCK ───────────────────────────────────────── */
+    .code-block {
+      margin: 3rem auto 0; max-width: 600px; width: 100%;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      animation: fadeUp 0.7s 0.4s ease both;
+      text-align: left;
+    }
+    .code-bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.r { background: #e63946; }
+    .dot.y { background: #f4a261; }
+    .dot.g { background: #2a9d8f; }
+    .code-bar span { margin-left: auto; font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .code-content { padding: 1.2rem 1.5rem; }
+    .code-line { font-size: 0.85rem; line-height: 2; color: var(--accent); }
+    .code-line .prompt { color: var(--red); }
+    .code-line .cmd { color: #a8d8ea; }
+    .code-line .arg { color: #f4d35e; }
+    .code-line .comment { color: var(--muted); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── FEATURES ─────────────────────────────────────────── */
+    .features {
+      padding: 5rem 2.5rem;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--red); margin-bottom: 0.6rem;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 3rem;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.8rem;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 0% 0%, var(--red-dim), transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .card:hover { border-color: var(--red); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .card:hover::before { opacity: 1; }
+    .card-icon { font-size: 1.6rem; margin-bottom: 1rem; }
+    .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .card p  { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── INSTALL SECTION ──────────────────────────────────── */
+    .install-section {
+      padding: 4rem 2.5rem;
+      background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .install-inner { max-width: 800px; margin: 0 auto; }
+    .install-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 0.45rem 1rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); font-family: 'Syne', sans-serif;
+      font-size: 0.8rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn.active, .tab-btn:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .cmd-block {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .cmd-block code { font-size: 0.85rem; color: var(--accent); flex: 1; }
+    .copy-btn {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); font-size: 0.75rem; padding: 0.3rem 0.6rem;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .copy-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── STRUCTURE ────────────────────────────────────────── */
+    .structure {
+      padding: 5rem 2.5rem;
+      max-width: 900px; margin: 0 auto;
+    }
+    .tree {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.5rem 1.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      line-height: 2.1;
+    }
+    .tree .dir  { color: #a8d8ea; }
+    .tree .file { color: var(--muted); }
+    .tree .sep  { color: var(--border); }
+    .tree .highlight { color: var(--red); }
+
+    /* ── BLOG PAGE ────────────────────────────────────────── */
+    .blog-page { padding: 5rem 2.5rem; max-width: 900px; margin: 0 auto; }
+    .blog-grid { display: grid; gap: 1.2rem; }
+    .blog-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.8rem 2rem;
+      cursor: pointer; transition: all 0.25s; position: relative;
+    }
+    .blog-card:hover { border-color: var(--red); transform: translateX(4px); }
+    .blog-meta { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 0.7rem; }
+    .blog-meta .tag {
+      display: inline-block; background: var(--red-dim); color: var(--red);
+      border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.7rem; font-weight: 700;
+      margin-right: 0.5rem; text-transform: uppercase;
+    }
+    .blog-card h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .blog-card p  { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+    .blog-arrow { position: absolute; right: 1.8rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.2rem; transition: color 0.2s, transform 0.2s; }
+    .blog-card:hover .blog-arrow { color: var(--red); transform: translateY(-50%) translateX(4px); }
+
+    /* Blog post reader */
+    .blog-post { display: none; }
+    .blog-post.open { display: block; animation: fadeUp 0.4s ease; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.5rem 1rem;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      margin-bottom: 2rem; transition: all 0.2s; color: var(--text);
+    }
+    .back-btn:hover { border-color: var(--red); color: var(--red); }
+    .post-content { max-width: 680px; }
+    .post-content h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem; }
+    .post-content .post-meta { font-size: 0.8rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 2rem; }
+    .post-content p { font-size: 0.95rem; line-height: 1.8; color: var(--muted); margin-bottom: 1.2rem; }
+    .post-content h2 { font-size: 1.2rem; font-weight: 700; margin: 2rem 0 0.8rem; }
+    .post-content h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.6rem; color: var(--accent); }
+    .post-content pre {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.2rem;
+      overflow-x: auto; margin: 1rem 0 1.5rem; font-size: 0.82rem; line-height: 1.7;
+    }
+    .post-content code { color: var(--accent); }
+    .post-content ul, .post-content ol { padding-left: 1.5rem; margin-bottom: 1.2rem; }
+    .post-content li { font-size: 0.95rem; line-height: 1.8; color: var(--muted); }
+
+    /* ── GITHUB PAGE ──────────────────────────────────────── */
+    .github-page { padding: 6rem 2.5rem; max-width: 700px; margin: 0 auto; text-align: center; }
+    .github-page h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem; }
+    .github-page p { color: var(--muted); margin-bottom: 3rem; font-size: 0.95rem; line-height: 1.7; }
+    .gh-links { display: flex; flex-direction: column; gap: 1rem; }
+    .gh-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.8rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      transition: all 0.25s; cursor: pointer; text-align: left;
+    }
+    .gh-card:hover { border-color: var(--red); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .gh-icon { font-size: 2rem; flex-shrink: 0; }
+    .gh-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .gh-card span { font-size: 0.85rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── FOOTER ───────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: gap;
+      color: var(--muted); font-size: 0.8rem; gap: 1rem;
+    }
+    footer .star { color: var(--red); }
+    .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #2a9d8f; margin-right: 0.4rem; animation: blink 2s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── SCROLL REVEAL ────────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ───────────────────────────────────────── */
+    @media (max-width: 640px) {
+      nav { padding: 1rem 1.2rem; }
+      .nav-links { gap: 1rem; }
+      .nav-links a { font-size: 0.78rem; }
+      .hero { padding: 5rem 1.2rem 3rem; }
+      .features, .blog-page, .github-page, .structure, .install-section { padding: 3rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-logo">
+    <img src="assets/icon.png" alt="Katyusha icon" style="width:24px;height:24px;border-radius:6px;object-fit:contain;" />
+    Katyusha Project
+  </div>
+  <div class="nav-links">
+    <a href="#" class="active" data-page="home" onclick="navigate('home',this)">Inicio</a>
+    <a href="#" data-page="credits" onclick="navigate('credits',this)">Créditos</a>
+    <a href="#" data-page="github" onclick="navigate('github',this)">GitHub</a>
+    <button class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌓</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ HOME PAGE ═══════════════ -->
+<section id="page-home" class="active">
+<div class="page-wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-orb"></div>
+    <div class="badge">☭ &nbsp;Katyusha Project · v1.0</div>
+    <h1>El instalador<br><span>del futuro</span></h1>
+    <p class="hero-sub">
+      Katyusha es un instalador de paquetes para Linux, rápido, modular y con
+      escáner de seguridad integrado. Inspirado en APT, Pacman y las herramientas modernas.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/alons2080-wq/Katyusha/releases/tag/v2.0.3.2" target="_blank">
+        <button class="btn-primary">Instalar ahora</button>
+      </a>
+      <a href="https://github.com/alons2080-wq/Katyusha" target="_blank">
+        <button class="btn-ghost">Ver en GitHub →</button>
+      </a>
+    </div>
+    <div class="code-block">
+      <div class="code-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span>bash — katyusha</span>
+      </div>
+      <div class="code-content" id="typewriter"></div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="features">
+    <p class="section-label reveal">¿Por qué Katyusha?</p>
+    <h2 class="section-title reveal">Potente, seguro y extensible</h2>
+    <div class="cards">
+      <div class="card reveal">
+        <div class="card-icon">🛡️</div>
+        <h3>Escáner de Seguridad</h3>
+        <p>Motor de análisis en Rust que detecta posibles amenazas de malware antes de instalar cualquier paquete.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">⚡</div>
+        <h3>Motor en C</h3>
+        <p>Frontend principal escrito en C para máxima velocidad y control sobre el sistema de instalación.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">📦</div>
+        <h3>Multi-formato</h3>
+        <p>Soporta .deb, .AppImage, .zip y .tar.gz. Instala desde rutas locales o URLs remotas sin complicaciones.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">🌐</div>
+        <h3>Repositorios Remotos</h3>
+        <p>Conecta con tu propio índice privado en GitHub. Configura el token y la URL, y tendrás tu propio repositorio.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">⚠️</div>
+        <h3>Alertas Inteligentes</h3>
+        <p>Detecta archivos grandes (1GB–9GB) y solicita confirmación antes de proceder. Sin sorpresas.</p>
+      </div>
+      <div class="card reveal">
+        <div class="card-icon">🧩</div>
+        <h3>Arquitectura Modular</h3>
+        <p>Separación clara de responsabilidades. Fácil de extender, modificar y adaptar a nuevos formatos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTALL -->
+  <div class="install-section">
+    <div class="install-inner">
+      <p class="section-label reveal">Comenzar</p>
+      <h2 class="section-title reveal">Compilar e instalar</h2>
+      <div class="install-tabs reveal">
+        <button class="tab-btn active" onclick="switchTab('c')">Compilar C</button>
+        <button class="tab-btn" onclick="switchTab('rust')">Compilar Rust</button>
+        <button class="tab-btn" onclick="switchTab('deb')">Paquete .deb</button>
+        <button class="tab-btn" onclick="switchTab('uso')">Uso rápido</button>
+      </div>
+      <div id="tab-c" class="tab-content active reveal">
+        <div class="cmd-block"><code>mkdir -p build && cd build</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>cmake ..</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>cmake --build .</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+      </div>
+      <div id="tab-rust" class="tab-content reveal">
+        <div class="cmd-block"><code>cd rust/scanner</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>cargo build --release</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+      </div>
+      <div id="tab-deb" class="tab-content reveal">
+        <div class="cmd-block"><code>make package</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>sudo dpkg -i build/katyusha_1.0.1_amd64.deb</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+      </div>
+      <div id="tab-uso" class="tab-content reveal">
+        <div class="cmd-block"><code>katyusha install paquete.deb</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>katyusha install https://example.com/app.AppImage</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>katyusha install --temp paquete.deb</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>katyusha update</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>katyusha list</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+        <div class="cmd-block"><code>katyusha upgrade paquete</code><button class="copy-btn" onclick="copyCmd(this)">copiar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRUCTURE -->
+  <div class="structure">
+    <p class="section-label reveal">Proyecto</p>
+    <h2 class="section-title reveal">Estructura del repositorio</h2>
+    <div class="tree reveal">
+      <div><span class="highlight">Katyusha/</span></div>
+      <div>&nbsp;├── <span class="dir">src/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">← Código C del instalador principal</span></div>
+      <div>&nbsp;├── <span class="dir">rust/scanner/</span> &nbsp;<span class="file">← Biblioteca Rust para escaneo</span></div>
+      <div>&nbsp;├── <span class="dir">include/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">← Headers globales opcionales</span></div>
+      <div>&nbsp;├── <span class="dir">build/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">← Salida de compilación CMake</span></div>
+      <div>&nbsp;├── <span class="dir">tests/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">← Pruebas y casos futuros</span></div>
+      <div>&nbsp;├── <span class="dir">.devcontainer/</span> <span class="file">← Config contenedor de desarrollo</span></div>
+      <div>&nbsp;└── <span class="highlight">CMakeLists.txt</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <div><span class="star">☭</span> Katyusha Project · 2025 · alons2080-wq</div>
+    <div><span class="status-dot"></span>v1.0 · Motor C + Scanner Rust</div>
+  </footer>
+</div>
+</section>
+
+
+<!-- ═══════════════ GITHUB PAGE ═══════════════ -->
+<section id="page-github">
+<div class="page-wrap">
+<div class="github-page">
+  <p class="section-label">Redes</p>
+  <h1>Encuéntrame en GitHub</h1>
+  <p>Todo el código de Katyusha es open-source. Reporta bugs, abre issues o simplemente dale una ⭐ si te gusta el proyecto.</p>
+  <div class="gh-links">
+    <a href="https://github.com/alons2080-wq/Katyusha" target="_blank">
+      <div class="gh-card">
+        <div class="gh-icon">📦</div>
+        <div>
+          <h3>Katyusha — Repositorio del proyecto</h3>
+          <span>github.com/alons2080-wq/Katyusha</span>
+        </div>
+      </div>
+    </a>
+    <a href="https://github.com/alons2080-wq" target="_blank">
+      <div class="gh-card">
+        <div class="gh-icon">👤</div>
+        <div>
+          <h3>alons2080-wq — Perfil del creador</h3>
+          <span>github.com/alons2080-wq</span>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+<footer>
+  <div><span class="star">☭</span> Katyusha Project · 2025</div>
+  <div><span class="status-dot"></span>Open Source</div>
+</footer>
+</div>
+</section>
+
+<!-- ═══════════════ CREDITS PAGE ═══════════════ -->
+<section id="page-credits">
+<div class="page-wrap">
+<div class="github-page" style="text-align:left;max-width:760px;">
+  <p class="section-label">Créditos</p>
+  <h1 style="margin-bottom:2rem;">Gracias a quienes hicieron esto posible</h1>
+
+  <!-- Girls und Panzer -->
+  <div class="gh-card" style="margin-bottom:1.2rem;cursor:default;flex-direction:column;align-items:flex-start;gap:0.8rem;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="gh-icon">🎖️</div>
+      <div>
+        <h3 style="font-size:1.1rem;">Girls und Panzer</h3>
+        <span style="font-family:'Syne',sans-serif;font-size:0.82rem;color:var(--muted);">Actas Girls und Panzer Film Partners · Anime · 2012–presente</span>
+      </div>
+    </div>
+    <p style="font-size:0.9rem;color:var(--muted);line-height:1.7;margin:0;">
+      El nombre e inspiración de este proyecto provienen del personaje <strong style="color:var(--text);">Katyusha</strong>,
+      comandante de la escuela Pravda en el anime <em>Girls und Panzer</em>.
+      Todo el crédito por dicho personaje pertenece a sus creadores originales:
+      <strong style="color:var(--text);">Actas, Girls und Panzer Film Partners</strong> y el equipo de producción del anime.
+      Este proyecto no tiene ninguna afiliación oficial con ellos.
+    </p>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+      <span style="background:var(--red-dim);color:var(--red);border-radius:999px;padding:0.2rem 0.7rem;font-size:0.72rem;font-weight:700;letter-spacing:0.05em;">PERSONAJE ORIGINAL</span>
+      <span style="background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:0.2rem 0.7rem;font-size:0.72rem;font-weight:600;">Girls und Panzer</span>
+      <span style="background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:0.2rem 0.7rem;font-size:0.72rem;font-weight:600;">Actas</span>
+    </div>
+  </div>
+
+  <!-- Creator -->
+  <div class="gh-card" style="margin-bottom:1.2rem;cursor:default;flex-direction:column;align-items:flex-start;gap:0.8rem;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="gh-icon">⚙️</div>
+      <div>
+        <h3 style="font-size:1.1rem;">alons2080-wq</h3>
+        <span style="font-family:'Syne',sans-serif;font-size:0.82rem;color:var(--muted);">Creador y desarrollador principal · Katyusha Project</span>
+      </div>
+    </div>
+    <p style="font-size:0.9rem;color:var(--muted);line-height:1.7;margin:0;">
+      Diseño de la arquitectura, motor de instalación en C, integración del scanner en Rust,
+      sistema de paquetes .deb y toda la infraestructura del proyecto Katyusha.
+    </p>
+    <a href="https://github.com/alons2080-wq" target="_blank"
+       style="display:inline-flex;align-items:center;gap:0.4rem;background:var(--red-dim);border:1px solid var(--red);color:var(--red);border-radius:var(--radius);padding:0.4rem 0.9rem;font-size:0.8rem;font-weight:700;transition:all 0.2s;">
+      Ver perfil en GitHub →
+    </a>
+  </div>
+
+  <!-- Disclaimer -->
+  <div style="margin-top:2.5rem;padding:1.2rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:0.82rem;color:var(--muted);line-height:1.7;">
+    ☭ &nbsp;Katyusha Project es un software libre y de código abierto, desarrollado de manera independiente.
+    El uso del nombre "Katyusha" es un homenaje al personaje y no implica ninguna asociación comercial o legal
+    con los titulares de los derechos de Girls und Panzer.
+  </div>
+</div>
+<footer>
+  <div><span class="star">☭</span> Katyusha Project · 2025</div>
+  <div><span class="status-dot"></span>Créditos</div>
+</footer>
+</div>
+</section>
+
+<script>
+/* ─── NAVIGATION ─── */
+function navigate(page, el) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+  observeReveal();
+}
+
+/* ─── THEME ─── */
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+/* Auto detect system theme */
+if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+  document.documentElement.setAttribute('data-theme', 'light');
+}
+
+/* ─── TABS ─── */
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+/* ─── COPY ─── */
+function copyCmd(btn) {
+  const code = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✓ copiado';
+    setTimeout(() => btn.textContent = 'copiar', 1800);
+  });
+}
+
+/* ─── TYPEWRITER HERO ─── */
+const lines = [
+  { text: '$ katyusha install nano', cls: '' },
+  { text: '→ Buscando en el índice...', cls: 'comment' },
+  { text: '→ Scanner: sin amenazas detectadas ✓', cls: 'comment' },
+  { text: '→ Instalando nano 7.2-1... listo 🎉', cls: 'comment' },
+];
+let li = 0, ci = 0;
+const tw = document.getElementById('typewriter');
+function type() {
+  if (li >= lines.length) return;
+  const line = lines[li];
+  if (ci === 0) {
+    const el = document.createElement('div');
+    el.className = 'code-line ' + line.cls;
+    el.id = 'tw-line-' + li;
+    tw.appendChild(el);
+  }
+  document.getElementById('tw-line-' + li).textContent = line.text.slice(0, ci + 1);
+  ci++;
+  if (ci >= line.text.length) { li++; ci = 0; setTimeout(type, 400); }
+  else setTimeout(type, 38);
+}
+setTimeout(type, 800);
+
+/* ─── SCROLL REVEAL ─── */
+function observeReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => { el.classList.remove('visible'); obs.observe(el); });
+}
+observeReveal();
+</script>
+</body>
+</html>
